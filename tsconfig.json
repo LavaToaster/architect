@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "types": [
+      "node",
+      "reflect-metadata"
+    ],
+    "typeRoots": [
+      "./types",
+      "./node_modules/@types"
+    ],
+    "incremental": true,
+    "target": "es2019",
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "noEmit": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "lib": ["es2019"],
+    "esModuleInterop": true,
+    "allowJs": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "strictBindCallApply": true,
+    "strictFunctionTypes": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "*": ["./types/*"]
+    },
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "include": ["src", "types"]
+}
