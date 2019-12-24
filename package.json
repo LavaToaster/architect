@@ -10,11 +10,10 @@
     "pretty": "prettier --write 'src/**/*.{ts,tsx}'"
   },
   "dependencies": {
-    "@types/chalk": "^2.2.0",
+    "@sentry/node": "5.10.2",
     "@types/flat": "^0.0.28",
     "@types/mongodb": "^3.3.12",
-    "@types/node": "^12.12.14",
-    "@types/ora": "^3.2.0",
+    "@types/node": "^13.1.0",
     "@types/prompts": "^2.0.3",
     "@types/yargs": "^13.0.3",
     "autobind-decorator": "^2.4.0",

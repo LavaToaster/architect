@@ -5,6 +5,7 @@ import { Listener } from './listener';
 import yargs from 'yargs';
 import fs from 'fs';
 import { injectable } from 'inversify';
+import { withScope } from '@sentry/node';
 
 interface GuildDocument {
   id: string;
@@ -26,17 +27,21 @@ interface MessageDocument {
 @injectable()
 export class MessageListener implements Listener {
   private messages: Collection<MessageDocument> = this.mongo.db().collection('messages');
+  private commands = new Discord.Collection();
 
   constructor(private discord: Discord.Client, private mongo: MongoClient) {}
 
   public async subscribe() {
-    this.discord.on('message', this.handleMessage);
+    let commandsFolder = `${__dirname}/../commands`;
+    let commandFiles = fs.readdirSync(`${commandsFolder}`).filter((file) => file.endsWith('.ts'));
 
-    // const commands = new Discord.Collection();
-    // const commandFiles = fs.readdirSync(`${__dirname}/commands`).filter((file) => file.endsWith('.ts'));
-    //
-    // for (const file of commandFiles) {
-    // }
+    for (let file of commandFiles) {
+      const command = (await import(`${commandsFolder}/${file}`)).default;
+
+      this.commands.set(command.signature, new command);
+    }
+
+    this.discord.on('message', this.handleMessage);
   }
 
   @boundMethod
@@ -46,11 +51,26 @@ export class MessageListener implements Listener {
       return;
     }
 
-    try {
-      await this.messages.insertOne(MessageListener.messageDocument(message));
-    } catch (e) {
-      await message.reply(e.toString());
+    // TODO: Session code!
+
+    const parsed = yargs.parse(message.content);
+    const [prefix, commandName, ...args] = parsed._;
+
+    if (!['!astra', `<@!${message.client.user.id}>`].includes(prefix)) {
+      return;
     }
+
+    if (this.commands.has(commandName)) {
+      const command: any = this.commands.get(commandName);
+      await command.run(message);
+
+      return;
+    }
+
+    console.log(args);
+
+    // log incoming message
+    await this.messages.insertOne(MessageListener.messageDocument(message));
   }
 
   private static messageDocument(message: Message): MessageDocument {

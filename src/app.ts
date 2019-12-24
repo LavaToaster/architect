@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import 'reflect-metadata';
 import { Container, interfaces } from 'inversify';
 import { Config } from './config';
@@ -23,6 +24,10 @@ export class App {
     // container.applyMiddleware(makeLoggerMiddleware());
     container.load(buildProviderModule());
     this.config = container.resolve(Config);
+
+    if (this.config.get('sentry')) {
+      Sentry.init({ dsn: this.config.get('sentry').dsn });
+    }
 
     container.bind(Container).toConstantValue(container);
 
