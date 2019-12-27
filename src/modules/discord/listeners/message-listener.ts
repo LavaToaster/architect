@@ -1,22 +1,16 @@
-import Discord, { Guild, Message } from 'discord.js';
+import Discord, { Message } from 'discord.js';
 import { Collection, MongoClient } from 'mongodb';
 import { boundMethod } from 'autobind-decorator';
 import { Listener } from './listener';
 import yargs from 'yargs';
 import fs from 'fs';
-import { injectable } from 'inversify';
-import { withScope } from '@sentry/node';
-
-interface GuildDocument {
-  id: string;
-  name: string;
-  available: boolean;
-  owner: string;
-}
+import { Container, injectable } from 'inversify';
+import { BotCommand, NewableBotCommand } from '../bot-command';
+import { SessionService } from '../servies/session-service';
 
 interface MessageDocument {
   id: string;
-  author: string;
+  authorId: string;
   content: string;
   guildId: string;
   channelId: string;
@@ -27,18 +21,23 @@ interface MessageDocument {
 @injectable()
 export class MessageListener implements Listener {
   private messages: Collection<MessageDocument> = this.mongo.db().collection('messages');
-  private commands = new Discord.Collection();
+  private commands = new Discord.Collection<string, BotCommand>();
 
-  constructor(private discord: Discord.Client, private mongo: MongoClient) {}
+  constructor(
+    private discord: Discord.Client,
+    private mongo: MongoClient,
+    private container: Container,
+    private sessionService: SessionService,
+  ) {}
 
   public async subscribe() {
     let commandsFolder = `${__dirname}/../commands`;
     let commandFiles = fs.readdirSync(`${commandsFolder}`).filter((file) => file.endsWith('.ts'));
 
     for (let file of commandFiles) {
-      const command = (await import(`${commandsFolder}/${file}`)).default;
+      const command: NewableBotCommand = (await import(`${commandsFolder}/${file}`)).default;
 
-      this.commands.set(command.signature, new command);
+      this.commands.set(command.signature, this.container.resolve(command));
     }
 
     this.discord.on('message', this.handleMessage);
@@ -51,7 +50,14 @@ export class MessageListener implements Listener {
       return;
     }
 
-    // TODO: Session code!
+    const session = await this.sessionService.getActiveSession(message.channel.id, message.author.id);
+
+    if (session) {
+      const command: BotCommand = this.commands.get(session.cmd)!;
+      await command.handleSession!(message, session);
+
+      return;
+    }
 
     const parsed = yargs.parse(message.content);
     const [prefix, commandName, ...args] = parsed._;
@@ -60,9 +66,14 @@ export class MessageListener implements Listener {
       return;
     }
 
+    if (commandName === 'help') {
+      await message.reply(`Possible commands are: ${this.commands.keyArray().join(', ')}.`);
+      return;
+    }
+
     if (this.commands.has(commandName)) {
-      const command: any = this.commands.get(commandName);
-      await command.run(message);
+      const command: BotCommand = this.commands.get(commandName)!;
+      await command.handleMessage(message, args);
 
       return;
     }
@@ -76,7 +87,7 @@ export class MessageListener implements Listener {
   private static messageDocument(message: Message): MessageDocument {
     return {
       id: message.id,
-      author: message.author.id,
+      authorId: message.author.id,
       content: message.content,
       guildId: message.guild.id,
       channelId: message.channel.id,

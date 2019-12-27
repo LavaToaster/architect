@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/node';
 import 'reflect-metadata';
-import { Container, interfaces } from 'inversify';
+import { Container } from 'inversify';
 import { Config } from './config';
 import { buildProviderModule } from 'inversify-binding-decorators';
 import chalk from 'chalk';
@@ -12,6 +12,7 @@ import MongoServiceProvider from './service-providers/mongo-service-provider';
 import { ServiceProvider } from './service-providers/service-provider';
 import DiscordServiceProvider from './service-providers/discord-service-provider';
 import './decorate';
+// import { makeLoggerMiddleware } from "inversify-logger-middleware";
 
 const serviceProviders = [MongoServiceProvider, DiscordServiceProvider];
 

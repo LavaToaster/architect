@@ -1,9 +1,12 @@
-import { Message } from "discord.js";
+import { Message } from 'discord.js';
+import { BotCommand } from '../bot-command';
+import { injectable } from 'inversify';
 
-export default class Pong {
+@injectable()
+export default class Pong implements BotCommand {
   static signature = 'pong';
 
-  async run(message: Message) {
+  async handleMessage(message: Message) {
     await message.reply('ping');
   }
 }

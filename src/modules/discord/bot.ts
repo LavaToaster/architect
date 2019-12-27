@@ -7,10 +7,11 @@ import { MongoClient } from 'mongodb';
 import { MessageListener } from './listeners/message-listener';
 import { GuildListener } from './listeners/guild-listener';
 import { NewableListener } from './listeners/listener';
+import { ReactionListener } from './listeners/reaction-listener';
 
 @injectable()
 export class Bot {
-  private listeners: NewableListener[] = [GuildListener, MessageListener];
+  private listeners: NewableListener[] = [GuildListener, MessageListener, ReactionListener];
   private setupSpinner?: ora.Ora;
 
   constructor(
@@ -20,26 +21,26 @@ export class Bot {
     private container: Container,
   ) {}
 
-  private async setup() {
+  public async run() {
     for (let listener of this.listeners) {
       this.container.resolve(listener).subscribe();
     }
 
+    this.setupSpinner = ora().start('Connecting to discord');
+
     this.discord.once('ready', async () => {
-      this.setupSpinner!.succeed('Connected to discord!');
+      this.setupSpinner!.succeed('Connected to discord');
 
       console.log(`Found ${this.discord.guilds.size} guilds`);
     });
-  }
-
-  public async run() {
-    this.setupSpinner = ora().start('Connecting to discord');
-
-    await this.setup();
 
     try {
       await this.discord.login(this.config.get('discord').token);
     } catch (error) {
+      this.setupSpinner.fail('Unable to login to discord');
+
+      console.error(error);
+
       return;
     }
 
