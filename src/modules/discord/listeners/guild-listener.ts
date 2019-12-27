@@ -1,5 +1,5 @@
 import Discord, { Guild } from 'discord.js';
-import { Collection, MongoClient } from 'mongodb';
+import { Collection, Db } from 'mongodb';
 import { boundMethod } from 'autobind-decorator';
 import { Listener } from './listener';
 import { injectable } from 'inversify';
@@ -13,9 +13,9 @@ interface GuildDocument {
 
 @injectable()
 export class GuildListener implements Listener {
-  private guilds: Collection<GuildDocument> = this.mongo.db().collection('guilds');
+  private guilds: Collection<GuildDocument> = this.db.collection('guilds');
 
-  constructor(private discord: Discord.Client, private mongo: MongoClient) {}
+  constructor(private discord: Discord.Client, private db: Db) {}
 
   public async subscribe() {
     this.discord.on('guildUpdate', (_, newGuild) => this.handleGuildCreate(newGuild));

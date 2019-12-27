@@ -1,5 +1,5 @@
 import Discord, { Message } from 'discord.js';
-import { Collection, MongoClient } from 'mongodb';
+import { Collection, Db } from 'mongodb';
 import { boundMethod } from 'autobind-decorator';
 import { Listener } from './listener';
 import yargs from 'yargs';
@@ -20,12 +20,12 @@ interface MessageDocument {
 
 @injectable()
 export class MessageListener implements Listener {
-  private messages: Collection<MessageDocument> = this.mongo.db().collection('messages');
+  private messages: Collection<MessageDocument> = this.db.collection('messages');
   private commands = new Discord.Collection<string, BotCommand>();
 
   constructor(
     private discord: Discord.Client,
-    private mongo: MongoClient,
+    private db: Db,
     private container: Container,
     private sessionService: SessionService,
   ) {}

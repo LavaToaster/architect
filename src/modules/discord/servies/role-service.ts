@@ -1,4 +1,4 @@
-import { Collection, MongoClient } from 'mongodb';
+import { Collection, Db } from 'mongodb';
 import uuid from 'uuid/v4';
 import { provide } from 'inversify-binding-decorators';
 
@@ -13,9 +13,9 @@ export interface RoleDocument<T = { [key: string]: any }> {
 
 @provide(RoleService)
 export class RoleService {
-  private roles: Collection<RoleDocument> = this.mongo.db().collection('roles');
+  private roles: Collection<RoleDocument> = this.db.collection('roles');
 
-  constructor(private mongo: MongoClient) {}
+  constructor(private db: Db) {}
 
   public async getRoleAssignment(messageId: string, emojiId: string) {
     return this.roles.findOne({ messageId, emojiId, active: true });

@@ -3,7 +3,6 @@ import { Config } from '../../config';
 import { Client } from 'discord.js';
 import ora from 'ora';
 import wait from 'waait';
-import { MongoClient } from 'mongodb';
 import { MessageListener } from './listeners/message-listener';
 import { GuildListener } from './listeners/guild-listener';
 import { NewableListener } from './listeners/listener';
@@ -17,7 +16,6 @@ export class Bot {
   constructor(
     private discord: Client,
     private config: Config,
-    private mongo: MongoClient,
     private container: Container,
   ) {}
 

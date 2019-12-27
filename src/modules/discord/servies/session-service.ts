@@ -1,4 +1,4 @@
-import { Collection, MongoClient } from 'mongodb';
+import { Collection, Db } from 'mongodb';
 import uuid from 'uuid/v4';
 import { provide } from 'inversify-binding-decorators';
 
@@ -16,9 +16,9 @@ export interface SessionDocument<T = { [key: string]: any }> {
 
 @provide(SessionService)
 export class SessionService {
-  private sessions: Collection<SessionDocument> = this.mongo.db().collection('session');
+  private sessions: Collection<SessionDocument> = this.db.collection('session');
 
-  constructor(private mongo: MongoClient) {}
+  constructor(private db: Db) {}
 
   public async getActiveSession(channelId: string, userId: string) {
     return this.sessions.findOne({ channelId, userId, active: true });
