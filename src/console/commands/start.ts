@@ -1,4 +1,4 @@
-import { ConsoleCommand, NewableConsoleCommand } from '../console-command';
+import { ConsoleCommand } from '../console-command';
 import { injectable } from 'inversify';
 import { Bot } from '../../modules/discord/bot';
 

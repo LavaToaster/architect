@@ -1,9 +1,10 @@
 import { Message } from 'discord.js';
 import { BotCommand } from '../bot-command';
 import { injectable } from 'inversify';
-import { SessionDocument, SessionService } from '../servies/session-service';
-import { RoleService } from '../servies/role-service';
 import emojiRegex from 'emoji-regex';
+import { SessionDocument } from '../../../../models';
+import { addReactionRole } from '../../../../repositories/discord-guild';
+import { SessionRepository } from '../../../../repositories';
 
 enum ReactRoleState {
   MESSAGE,
@@ -27,34 +28,27 @@ const emoji = new RegExp(emojiRegex());
 export default class ReactRole implements BotCommand {
   static signature = 'react-role';
 
-  constructor(private sessionService: SessionService, private roleService: RoleService) {}
-
   async handleMessage(message: Message, args: string[]) {
     if (!Array.isArray(args)) {
       return;
     }
 
-    const messageIds = [message.id];
+    const responseMessage = (await message.channel.send('**Reaction Role Setup**\nMessage ID?')) as Message;
 
-    const message1 = (await message.channel.send('**Reaction Role Setup**')) as Message;
-    const message2 = (await message.channel.send('Message ID?')) as Message;
-
-    messageIds.push(message1.id, message2.id);
-
-    await this.sessionService.createSession(
+    await SessionRepository.create(
       message.channel.id,
       message.author.id,
       ReactRole.signature,
       {
         state: ReactRoleState.MESSAGE,
       },
-      messageIds,
+      [responseMessage.id],
     );
   }
 
   async handleSession(message: Message, session: SessionDocument<RoleContext>) {
     if (message.content === 'stop') {
-      await this.sessionService.finishSession(message.channel.id, message.author.id);
+      await SessionRepository.finish(message.channel.id, message.author.id);
       await message.react('👍');
       return;
     }
@@ -84,7 +78,7 @@ export default class ReactRole implements BotCommand {
 
         messageIds.push(message1.id);
 
-        await this.sessionService.updateSession(
+        await SessionRepository.update(
           message.channel.id,
           message.author.id,
           {
@@ -105,7 +99,7 @@ export default class ReactRole implements BotCommand {
           const message1 = (await message.channel.send('Invalid role 😢')) as Message;
           messageIds.push(message1.id);
 
-          await this.sessionService.updateSession(message.channel.id, message.author.id, session.context, messageIds);
+          await SessionRepository.update(message.channel.id, message.author.id, session.context, messageIds);
 
           return;
         }
@@ -113,7 +107,7 @@ export default class ReactRole implements BotCommand {
         const message1 = (await message.channel.send(`Enter Emoji:`, { disableEveryone: true })) as Message;
         messageIds.push(message1.id);
 
-        await this.sessionService.updateSession(
+        await SessionRepository.update(
           message.channel.id,
           message.author.id,
           {
@@ -136,7 +130,7 @@ export default class ReactRole implements BotCommand {
             disableEveryone: true,
           })) as Message;
           messageIds.push(message1.id);
-          await this.sessionService.updateSession(message.channel.id, message.author.id, session.context, messageIds);
+          await SessionRepository.update(message.channel.id, message.author.id, session.context, messageIds);
 
           return;
         }
@@ -149,7 +143,7 @@ export default class ReactRole implements BotCommand {
             { disableEveryone: true },
           )) as Message;
           messageIds.push(message1.id);
-          await this.sessionService.updateSession(message.channel.id, message.author.id, session.context, messageIds);
+          await SessionRepository.update(message.channel.id, message.author.id, session.context, messageIds);
 
           return;
         }
@@ -159,7 +153,7 @@ export default class ReactRole implements BotCommand {
         })) as Message;
         messageIds.push(message1.id);
 
-        await this.sessionService.updateSession(
+        await SessionRepository.update(
           message.channel.id,
           message.author.id,
           {
@@ -170,12 +164,10 @@ export default class ReactRole implements BotCommand {
           messageIds,
         );
 
-        await this.roleService.createRoleAssignment(
-          message.guild.id,
-          session.context.messageId,
-          emojiId,
-          session.context.roleId,
-        );
+        await addReactionRole(message.guild.id, {
+          emoji: emojiId,
+          roleId: session.context.roleId,
+        });
 
         const roleMessage = await message.channel.fetchMessage(session.context.messageId);
         await roleMessage.react(message.content);
@@ -184,14 +176,14 @@ export default class ReactRole implements BotCommand {
       }
       case ReactRoleState.DONE: {
         if (message.content === 'no') {
-          await this.sessionService.updateSession(message.channel.id, message.author.id, session.context, messageIds);
-          await this.sessionService.finishSession(message.channel.id, message.author.id);
+          await SessionRepository.update(message.channel.id, message.author.id, session.context, messageIds);
+          await SessionRepository.finish(message.channel.id, message.author.id);
           await message.react('👍');
           break;
         }
 
         if (message.content === 'yes') {
-          await this.sessionService.finishSession(message.channel.id, message.author.id);
+          await SessionRepository.finish(message.channel.id, message.author.id);
           const deleteMessageIds = [message.id, ...session.messageIds];
           await message.channel.bulkDelete(deleteMessageIds);
           break;
@@ -199,7 +191,7 @@ export default class ReactRole implements BotCommand {
 
         const message1 = (await message.channel.send('Either `yes` or `no` 🙂', { disableEveryone: true })) as Message;
         messageIds.push(message1.id);
-        await this.sessionService.updateSession(message.channel.id, message.author.id, session.context, messageIds);
+        await SessionRepository.update(message.channel.id, message.author.id, session.context, messageIds);
 
         break;
       }

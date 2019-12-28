@@ -1,5 +1,5 @@
 import { Message } from 'discord.js';
-import { SessionDocument } from './servies/session-service';
+import { SessionDocument } from '../../../models';
 
 export interface BotCommand {
   handleMessage(message: Message, args: string[]): Promise<any>;

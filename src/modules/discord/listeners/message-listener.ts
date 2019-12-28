@@ -5,8 +5,8 @@ import { Listener } from './listener';
 import yargs from 'yargs';
 import fs from 'fs';
 import { Container, injectable } from 'inversify';
-import { BotCommand, NewableBotCommand } from '../bot-command';
-import { SessionService } from '../servies/session-service';
+import { BotCommand, NewableBotCommand } from '../chat/bot-command';
+import { SessionRepository } from '../../../repositories';
 
 interface MessageDocument {
   id: string;
@@ -23,12 +23,7 @@ export class MessageListener implements Listener {
   private messages: Collection<MessageDocument> = this.db.collection('messages');
   private commands = new Discord.Collection<string, BotCommand>();
 
-  constructor(
-    private discord: Discord.Client,
-    private db: Db,
-    private container: Container,
-    private sessionService: SessionService,
-  ) {}
+  constructor(private discord: Discord.Client, private db: Db, private container: Container) {}
 
   public async subscribe() {
     let commandsFolder = `${__dirname}/../commands`;
@@ -50,7 +45,7 @@ export class MessageListener implements Listener {
       return;
     }
 
-    const session = await this.sessionService.getActiveSession(message.channel.id, message.author.id);
+    const session = await SessionRepository.getActiveByChannelUser(message.channel.id, message.author.id);
 
     if (session) {
       const command: BotCommand = this.commands.get(session.cmd)!;
@@ -77,8 +72,6 @@ export class MessageListener implements Listener {
 
       return;
     }
-
-    console.log(args);
 
     // log incoming message
     await this.messages.insertOne(MessageListener.messageDocument(message));

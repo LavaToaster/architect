@@ -1,15 +1,11 @@
-import Discord, { Guild, MessageReaction, TextChannel, User } from 'discord.js';
-import { Collection, Db } from 'mongodb';
+import Discord, { MessageReaction, TextChannel, User } from 'discord.js';
 import { Listener } from './listener';
 import { injectable } from 'inversify';
-import { RoleDocument, RoleService } from '../servies/role-service';
 import { boundMethod } from 'autobind-decorator';
 
 @injectable()
 export class ReactionListener implements Listener {
-  private roles: Collection<RoleDocument> = this.db.collection('roles');
-
-  constructor(private discord: Discord.Client, private db: Db, private roleService: RoleService) {}
+  constructor(private discord: Discord.Client) {}
 
   public async subscribe() {
     this.discord.on('messageReactionAdd', this.handleMessageReactionAdd);

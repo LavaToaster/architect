@@ -16,7 +16,6 @@ export default class MongoServiceProvider extends ServiceProvider {
   public async boot() {
     const spinner = ora().start('Connecting to mongo');
     try {
-
       const { uri, user, password } = this.config.get('mongo');
 
       const Mongoose = await mongoose.connect(uri, {
@@ -30,9 +29,7 @@ export default class MongoServiceProvider extends ServiceProvider {
         connectTimeoutMS: 500,
       });
 
-      this.container
-        .bind(Db)
-        .toConstantValue(Mongoose.connection.db);
+      this.container.bind(Db).toConstantValue(Mongoose.connection.db);
 
       spinner.succeed('Connected to mongo');
     } catch (e) {

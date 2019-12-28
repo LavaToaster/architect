@@ -1,21 +1,12 @@
 import Discord, { Guild } from 'discord.js';
-import { Collection, Db } from 'mongodb';
 import { boundMethod } from 'autobind-decorator';
 import { Listener } from './listener';
 import { injectable } from 'inversify';
-
-interface GuildDocument {
-  id: string;
-  name: string;
-  available: boolean;
-  owner: string;
-}
+import { DiscordGuild, fromGuild } from '../../../models';
 
 @injectable()
 export class GuildListener implements Listener {
-  private guilds: Collection<GuildDocument> = this.db.collection('guilds');
-
-  constructor(private discord: Discord.Client, private db: Db) {}
+  constructor(private discord: Discord.Client) {}
 
   public async subscribe() {
     this.discord.on('guildUpdate', (_, newGuild) => this.handleGuildCreate(newGuild));
@@ -26,35 +17,25 @@ export class GuildListener implements Listener {
 
   @boundMethod
   private async handleReady() {
-    const bulk = this.guilds.initializeUnorderedBulkOp();
-
-    if (!(await this.guilds.indexExists('id'))) {
-      await this.guilds.createIndex('id', { unique: true });
-    }
+    let ops = [];
 
     for (const guild of this.discord.guilds.array()) {
-      bulk
-        .find({ id: guild.id })
-        .upsert()
-        .update({
-          $set: GuildListener.guildDocument(guild),
-        });
+      ops.push({
+        updateOne: {
+          filter: {
+            _id: guild.id,
+          },
+          update: fromGuild(guild),
+          upsert: true,
+        },
+      });
     }
 
-    await bulk.execute();
+    await DiscordGuild.bulkWrite(ops);
   }
 
   @boundMethod
   private async handleGuildCreate(guild: Guild) {
-    await this.guilds.updateOne({ id: guild.id }, { $set: GuildListener.guildDocument(guild) });
-  }
-
-  private static guildDocument(guild: Guild): GuildDocument {
-    return {
-      id: guild.id,
-      name: guild.name,
-      available: guild.available,
-      owner: guild.ownerID,
-    };
+    await DiscordGuild.updateOne({ id: guild.id }, { $set: fromGuild(guild) }, { upsert: true });
   }
 }

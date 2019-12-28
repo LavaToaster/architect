@@ -3,21 +3,14 @@ import { Config } from '../../config';
 import { Client } from 'discord.js';
 import ora from 'ora';
 import wait from 'waait';
-import { MessageListener } from './listeners/message-listener';
-import { GuildListener } from './listeners/guild-listener';
-import { NewableListener } from './listeners/listener';
-import { ReactionListener } from './listeners/reaction-listener';
+import { NewableListener, GuildListener, MessageListener, ReactionListener } from './listeners';
 
 @injectable()
 export class Bot {
   private listeners: NewableListener[] = [GuildListener, MessageListener, ReactionListener];
   private setupSpinner?: ora.Ora;
 
-  constructor(
-    private discord: Client,
-    private config: Config,
-    private container: Container,
-  ) {}
+  constructor(private discord: Client, private config: Config, private container: Container) {}
 
   public async run() {
     for (let listener of this.listeners) {
