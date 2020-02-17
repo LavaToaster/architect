@@ -1,9 +1,9 @@
 import { Message } from 'discord.js';
-import { SessionDocument } from '../../../models';
+import { MachineConfig } from "./state-machine/machine";
 
 export interface BotCommand {
-  handleMessage(message: Message, args: string[]): Promise<any>;
-  handleSession?(message: Message, session: SessionDocument): Promise<any>;
+  handleMessage?(message: Message, args: string[]): Promise<any>;
+  getMachine?(message: Message): Promise<MachineConfig>;
 }
 
 export type NewableBotCommand = {

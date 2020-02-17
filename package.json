@@ -12,6 +12,7 @@
   "dependencies": {
     "@sentry/node": "5.10.2",
     "@types/flat": "^0.0.28",
+    "@types/jest": "^24.0.25",
     "@types/mongodb": "^3.3.12",
     "@types/mongoose": "^5.5.35",
     "@types/node": "^13.1.0",
@@ -39,6 +40,25 @@
     "yargs": "^15.0.2"
   },
   "devDependencies": {
-    "prettier": "^1.19.1"
+    "jest": "^24.9.0",
+    "prettier": "^1.19.1",
+    "ts-jest": "^24.2.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/src"
+    ],
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "testMatch": [
+      "**/__tests__/*.(ts|tsx)",
+      "**/?(*.)spec.(ts|tsx)"
+    ],
+    "moduleFileExtensions": [
+      "js",
+      "ts"
+    ]
   }
 }

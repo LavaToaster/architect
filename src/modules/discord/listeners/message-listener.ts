@@ -7,6 +7,8 @@ import fs from 'fs';
 import { Container, injectable } from 'inversify';
 import { BotCommand, NewableBotCommand } from '../chat/bot-command';
 import { SessionRepository } from '../../../repositories';
+import { MachineConfig, processMachine } from "../chat/state-machine/machine";
+import { SessionDocument } from "../../../models";
 
 interface MessageDocument {
   id: string;
@@ -26,7 +28,7 @@ export class MessageListener implements Listener {
   constructor(private discord: Discord.Client, private db: Db, private container: Container) {}
 
   public async subscribe() {
-    let commandsFolder = `${__dirname}/../commands`;
+    let commandsFolder = `${__dirname}/../chat/commands`;
     let commandFiles = fs.readdirSync(`${commandsFolder}`).filter((file) => file.endsWith('.ts'));
 
     for (let file of commandFiles) {
@@ -49,7 +51,7 @@ export class MessageListener implements Listener {
 
     if (session) {
       const command: BotCommand = this.commands.get(session.cmd)!;
-      await command.handleSession!(message, session);
+      this.handleMachine(await command.getMachine!(message), message, session);
 
       return;
     }
@@ -68,13 +70,24 @@ export class MessageListener implements Listener {
 
     if (this.commands.has(commandName)) {
       const command: BotCommand = this.commands.get(commandName)!;
-      await command.handleMessage(message, args);
+
+      if (command.getMachine) {
+        this.handleMachine(await command.getMachine(message), message);
+      } else if (command.handleMessage) {
+        await command.handleMessage(message, args);
+      } else {
+        await message.reply(`Command \`${commandName}\` has not been configured correctly. It should either handle message, or handleMachine!`);
+      }
 
       return;
     }
 
     // log incoming message
     await this.messages.insertOne(MessageListener.messageDocument(message));
+  }
+
+  private async handleMachine(machine: MachineConfig, message: Message, session?: SessionDocument) {
+    await processMachine(machine, message, session);
   }
 
   private static messageDocument(message: Message): MessageDocument {
